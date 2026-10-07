@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#ff5a16" />
+  <title>نباهة — مساعدك الذكي للتحصيل</title>
+  <meta name="description" content="منصة نباهة التعليمية: اسأل، افهم، وخطّط لمذاكرتك بذكاء." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23ff5a16'/%3E%3Cpath d='M20 35V24a12 12 0 0 1 24 0v11' fill='none' stroke='white' stroke-width='5' stroke-linecap='round'/%3E%3Cpath d='M16 36h32M24 45h16' fill='none' stroke='white' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <style>
+    :root {
+      --ink: #111b3d;
+      --muted: #68738e;
+      --line: #e9ebf1;
+      --surface: #ffffff;
+      --soft: #f7f8fb;
+      --orange: #ff5a16;
+      --orange-2: #ff7a22;
+      --orange-soft: #fff1e9;
+      --navy: #0d1838;
+      --shadow: 0 18px 60px rgba(17, 27, 61, .10);
+      --shadow-soft: 0 8px 28px rgba(17, 27, 61, .07);
+    }
+
+    * { box-sizing: border-box; }
+    html { font-size: 16px; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #f4f5f8;
+      color: var(--ink);
+      font-family: "Tajawal", system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    button, input, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .icon { width: 23px; height: 23px; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; flex: 0 0 auto; }
+
+    .app-shell {
+      direction: ltr;
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 270px minmax(0, 1fr) 300px;
+    }
+    .left-sidebar, .right-sidebar, .workspace { direction: rtl; }
+
+    .left-sidebar {
+      background: rgba(255,255,255,.98);
+      border-right: 1px solid var(--line);
+      padding: 24px 18px 18px;
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      z-index: 20;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      direction: rtl;
+      margin-bottom: 22px;
+    }
+    .brand-mark { width: 60px; height: 60px; color: var(--orange); }
+    .brand-title { font-size: 2rem; font-weight: 900; line-height: 1; letter-spacing: -.05em; }
+    .brand-sub { color: #47516a; font-size: .78rem; font-weight: 600; margin-top: 8px; }
+    .new-chat {
+      border: 0;
+      color: white;
+      background: linear-gradient(135deg, var(--orange), #ff690f);
+      min-height: 56px;
+      border-radius: 15px;
+      font-weight: 800;
+      font-size: 1.05rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      box-shadow: 0 9px 24px rgba(255,90,22,.24);
+      transition: .2s ease;
+    }
+    .new-chat:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(255,90,22,.3); }
+    .nav { display: grid; gap: 4px; margin-top: 14px; }
+    .nav-item {
+      border: 0;
+      background: transparent;
+      color: #566179;
+      border-radius: 13px;
+      min-height: 53px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 0 16px;
+      font-weight: 700;
+      font-size: .98rem;
+      text-align: right;
+      position: relative;
+      transition: .18s ease;
+    }
+    .nav-item .icon { color: var(--orange); }
+    .nav-item:hover { background: #fafafa; color: var(--ink); }
+    .nav-item.active { color: var(--orange); background: linear-gradient(90deg, #fff8f4, var(--orange-soft)); }
+    .nav-item.active::before { content: ""; position: absolute; right: 0; height: 27px; width: 4px; border-radius: 4px 0 0 4px; background: var(--orange); }
+    .plan-card {
+      margin-top: 10px;
+      background: linear-gradient(135deg, #fff7f1, #fff0e7);
+      min-height: 90px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      gap: 13px;
+      color: var(--ink);
+    }
+    .plan-card .crown { color: var(--orange); width: 31px; height: 31px; }
+    .plan-card strong { display: block; font-size: .98rem; }
+    .plan-card small { color: var(--muted); font-weight: 600; }
+    .plan-card .chev { margin-right: auto; color: var(--orange); }
+    .side-bottom { margin-top: auto; border-top: 1px solid var(--line); padding-top: 12px; }
+    .profile-card {
+      margin-top: 8px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      min-height: 82px;
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      gap: 10px;
+      background: #fff;
+    }
+    .avatar { width: 48px; height: 48px; border-radius: 50%; background: #fff0e8; color: var(--orange); display: grid; place-items: center; }
+    .avatar .icon { width: 28px; height: 28px; }
+    .profile-card strong { display: block; font-size: .9rem; }
+    .profile-card small { color: var(--muted); font-size: .75rem; }
+    .profile-card .chev { margin-right: auto; color: var(--orange); }
+
+    .workspace { min-width: 0; background: #f7f7f9; }
+    .topbar {
+      height: 88px;
+      padding: 15px 26px;
+      background: rgba(255,255,255,.88);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 15;
+    }
+    .product-switcher {
+      border: 1px solid #efeff3;
+      background: white;
+      border-radius: 14px;
+      height: 53px;
+      min-width: 190px;
+      padding: 0 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--ink);
+      font-weight: 900;
+      font-size: 1.1rem;
+      box-shadow: var(--shadow-soft);
+    }
+    .mini-mark { color: var(--orange); width: 31px; height: 31px; }
+    .credits {
+      border: 0;
+      color: white;
+      background: linear-gradient(135deg, #ff741a, #ff4e12);
+      height: 51px;
+      padding: 0 19px;
+      border-radius: 15px;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      font-weight: 800;
+      box-shadow: 0 8px 22px rgba(255,90,22,.2);
+    }
+    .top-actions { display: flex; gap: 9px; align-items: center; }
+    .round-btn { width: 49px; height: 49px; border-radius: 50%; border: 1px solid var(--line); background: white; color: var(--ink); display: grid; place-items: center; position: relative; }
+    .badge { position: absolute; top: -3px; right: -3px; width: 20px; height: 20px; border-radius: 50%; background: #ef202d; color: white; display: grid; place-items: center; font-size: .65rem; font-weight: 800; border: 2px solid white; }
+    .mobile-menu { display: none; }
+
+    .content { padding: 20px 26px 40px; max-width: 1120px; margin: 0 auto; }
+    .hero {
+      min-height: 255px;
+      border-radius: 24px;
+      overflow: hidden;
+      position: relative;
+      isolation: isolate;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 42px 30px 88px;
+      background:
+        radial-gradient(circle at 82% 12%, rgba(255,151,76,.5) 0 10%, transparent 10.5%),
+        radial-gradient(circle at 14% 38%, rgba(255,255,255,.78) 0 4%, transparent 4.5%),
+        linear-gradient(135deg, #fff8f1 0%, #ffd4b9 52%, #f5b17c 100%);
+      box-shadow: var(--shadow-soft);
+    }
+    .hero::before, .hero::after { content: ""; position: absolute; left: -5%; right: -5%; bottom: -73px; height: 155px; border-radius: 50% 50% 0 0; background: rgba(255,255,255,.48); transform: rotate(2deg); z-index: -1; }
+    .hero::after { bottom: -92px; background: rgba(242,166,111,.52); transform: rotate(-4deg); }
+    .hero-copy { position: relative; z-index: 2; }
+    .grad-cap { width: 66px; height: 66px; color: var(--navy); margin: 0 auto 6px; filter: drop-shadow(0 9px 10px rgba(13,24,56,.15)); }
+    .hero h1 { margin: 0; font-size: clamp(2rem, 4.1vw, 3.25rem); font-weight: 900; letter-spacing: -.055em; }
+    .hero h1 span { color: var(--orange); }
+    .hero p { margin: 12px 0 0; font-size: clamp(1rem, 1.7vw, 1.2rem); font-weight: 600; color: #3b4560; }
+
+    .feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: -57px; position: relative; z-index: 5; }
+    .feature-card {
+      border: 1px solid rgba(225,226,232,.8);
+      background: rgba(255,255,255,.91);
+      backdrop-filter: blur(10px);
+      min-height: 145px;
+      border-radius: 18px;
+      padding: 19px 17px;
+      text-align: right;
+      color: var(--ink);
+      box-shadow: var(--shadow-soft);
+      position: relative;
+      transition: .2s ease;
+    }
+    .feature-card:hover { transform: translateY(-4px); border-color: #ffd2bd; }
+    .feature-card .icon { width: 36px; height: 36px; color: var(--orange); margin-bottom: 12px; }
+    .feature-card strong { display: block; font-size: 1rem; font-weight: 900; }
+    .feature-card small { display: block; color: var(--muted); margin-top: 5px; line-height: 1.5; font-weight: 600; }
+    .feature-card .card-arrow { position: absolute; left: 15px; top: 50%; color: var(--orange); font-size: 1.4rem; }
+
+    .ask-box { margin-top: 18px; border: 1px solid #e0e2e9; background: white; border-radius: 20px; box-shadow: var(--shadow-soft); padding: 18px; }
+    .ask-input { width: 100%; min-height: 65px; border: 0; resize: none; outline: none; color: var(--ink); font-size: 1.1rem; padding: 8px 8px 3px; background: transparent; }
+    .ask-input::placeholder { color: #9aa1b2; }
+    .ask-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid #f0f1f4; padding-top: 13px; }
+    .ask-tools { display: flex; align-items: center; gap: 8px; }
+    .tool-btn { min-height: 40px; border: 0; background: #f7f8fa; color: #3d4862; border-radius: 12px; padding: 0 13px; display: flex; align-items: center; gap: 7px; font-weight: 700; }
+    .send-btn { width: 52px; height: 52px; border-radius: 50%; border: 0; color: white; background: linear-gradient(135deg, var(--orange-2), var(--orange)); display: grid; place-items: center; box-shadow: 0 10px 24px rgba(255,90,22,.28); transition: .2s ease; }
+    .send-btn:hover { transform: scale(1.05); }
+    .quick-title { margin: 19px 3px 10px; font-size: 1.05rem; font-weight: 900; }
+    .quick-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .quick { border: 1px solid var(--line); background: white; min-height: 49px; border-radius: 13px; color: #3d4862; font-weight: 700; transition: .18s ease; }
+    .quick:hover { color: var(--orange); border-color: #ffc8ad; background: #fffaf7; }
+
+    .right-sidebar {
+      border-left: 1px solid var(--line);
+      padding: 100px 13px 20px;
+      background: #f3f4f7;
+      height: 100vh;
+      overflow-y: auto;
+      position: sticky;
+      top: 0;
+    }
+    .side-panel { background: white; border: 1px solid #eceef2; border-radius: 19px; padding: 16px 14px; box-shadow: var(--shadow-soft); margin-bottom: 14px; }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
+    .panel-head h2 { font-size: 1.07rem; margin: 0; font-weight: 900; }
+    .panel-head .icon { color: var(--orange); }
+    .project, .recent { display: flex; align-items: center; gap: 10px; min-height: 66px; border-top: 1px solid #f0f1f4; }
+    .project:first-of-type, .recent:first-of-type { border-top: 0; }
+    .folder { width: 39px; height: 39px; border-radius: 12px; display: grid; place-items: center; flex: 0 0 auto; }
+    .folder.orange { color: #f26a21; background: #fff0e7; }
+    .folder.purple { color: #7555e8; background: #f0edff; }
+    .folder.blue { color: #2882e8; background: #e9f3ff; }
+    .folder.green { color: #31ae61; background: #eaf8ef; }
+    .project strong, .recent strong { display: block; font-size: .82rem; }
+    .project small, .recent small { color: var(--muted); font-size: .72rem; }
+    .more { margin-right: auto; border: 0; background: transparent; color: #8991a3; font-weight: 900; }
+    .recent { align-items: flex-start; padding: 12px 0; }
+    .recent .chat-mini { width: 20px; height: 20px; color: #6b7691; margin-top: 2px; }
+    .view-all { width: 100%; border: 0; border-radius: 12px; background: var(--orange-soft); color: var(--orange); font-weight: 800; min-height: 46px; margin-top: 8px; }
+
+    .modal-layer { position: fixed; inset: 0; width: 100vw; max-width: 100vw; z-index: 100; display: flex; align-items: center; justify-content: center; direction: ltr; padding: 20px; overflow: hidden; opacity: 1; visibility: visible; transition: .24s ease; }
+    .modal-layer.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    .backdrop { position: absolute; inset: 0; background: rgba(13,18,33,.48); backdrop-filter: blur(4px); }
+    .auth-modal {
+      width: calc(100% - 32px);
+      max-width: 450px;
+      min-width: 0;
+      background: rgba(255,255,255,.98);
+      border-radius: 24px;
+      box-shadow: 0 30px 100px rgba(13,24,56,.28);
+      padding: 28px 26px 23px;
+      position: relative;
+      transform: translateY(0) scale(1);
+      transition: .25s ease;
+      direction: rtl;
+    }
+    .modal-layer.hidden .auth-modal { transform: translateY(18px) scale(.97); }
+    .close-modal { position: absolute; left: 18px; top: 18px; width: 35px; height: 35px; border-radius: 50%; border: 0; background: #f5f6f8; color: #536078; display: grid; place-items: center; }
+    .lock-badge { width: 66px; height: 66px; border-radius: 50%; color: var(--orange); background: #fff0e8; display: grid; place-items: center; margin: -2px auto 13px; }
+    .lock-badge .icon { width: 32px; height: 32px; }
+    .auth-modal h2 { text-align: center; margin: 0; font-size: 1.35rem; font-weight: 900; }
+    .auth-modal .lead { text-align: center; color: var(--muted); margin: 5px 0 17px; font-size: .9rem; }
+    .field { position: relative; margin-top: 11px; }
+    .field input { width: 100%; height: 51px; border: 1px solid #dfe2e9; border-radius: 12px; outline: 0; padding: 0 44px 0 44px; color: var(--ink); background: white; transition: .18s ease; }
+    .field input:focus { border-color: var(--orange); box-shadow: 0 0 0 4px rgba(255,90,22,.1); }
+    .field .icon { position: absolute; right: 14px; top: 14px; color: #68738e; }
+    .field .eye { right: auto; left: 12px; border: 0; background: transparent; color: #68738e; top: 11px; padding: 4px; }
+    .auth-row { display: flex; justify-content: space-between; align-items: center; margin: 14px 1px; font-size: .83rem; }
+    .remember { display: flex; align-items: center; gap: 7px; color: #505b73; }
+    .remember input { accent-color: var(--orange); width: 16px; height: 16px; }
+    .forgot { color: var(--orange); text-decoration: none; font-weight: 700; }
+    .login-btn { width: 100%; min-height: 51px; border: 0; border-radius: 12px; color: white; background: linear-gradient(135deg, #ff7419, #ff4d10); font-weight: 900; font-size: 1rem; box-shadow: 0 10px 25px rgba(255,90,22,.25); }
+    .divider { display: flex; align-items: center; gap: 11px; color: #8b93a5; font-size: .78rem; margin: 14px 0; }
+    .divider::before, .divider::after { content: ""; height: 1px; background: var(--line); flex: 1; }
+    .create-btn { width: 100%; min-height: 50px; border: 1px solid var(--orange); border-radius: 12px; color: var(--orange); background: white; font-weight: 900; }
+    .error { min-height: 18px; margin-top: 6px; color: #d92d20; font-size: .78rem; font-weight: 600; }
+    .toast { position: fixed; left: 50%; bottom: 25px; transform: translate(-50%, 30px); z-index: 150; background: var(--navy); color: white; border-radius: 13px; padding: 13px 18px; box-shadow: var(--shadow); opacity: 0; pointer-events: none; transition: .25s ease; font-weight: 700; }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    @media (max-width: 1180px) {
+      .app-shell { grid-template-columns: 235px minmax(0, 1fr); }
+      .right-sidebar { display: none; }
+    }
+    @media (max-width: 850px) {
+      .app-shell { display: block; }
+      .left-sidebar { position: fixed; inset: 0 auto 0 0; width: 280px; transform: translateX(-105%); transition: .25s ease; box-shadow: 15px 0 50px rgba(17,27,61,.18); }
+      body.menu-open .left-sidebar { transform: translateX(0); }
+      .topbar { height: 75px; padding: 12px 16px; }
+      .mobile-menu { display: grid; }
+      .product-switcher { min-width: 135px; height: 48px; padding: 0 13px; }
+      .credits span { display: none; }
+      .credits { width: 48px; padding: 0; justify-content: center; }
+      .top-actions .round-btn:nth-of-type(2) { display: none; }
+      .content { padding: 16px 15px 30px; }
+      .feature-grid { grid-template-columns: repeat(2, 1fr); }
+      .hero { min-height: 230px; padding-inline: 18px; }
+    }
+    @media (max-width: 560px) {
+      .top-actions .round-btn { width: 44px; height: 44px; }
+      .product-switcher { min-width: 112px; font-size: .95rem; }
+      .mini-mark { width: 27px; }
+      .hero { min-height: 215px; padding-top: 30px; padding-bottom: 76px; }
+      .hero p { line-height: 1.7; }
+      .grad-cap { width: 54px; height: 54px; }
+      .feature-grid { gap: 9px; margin-top: -45px; }
+      .feature-card { min-height: 133px; padding: 15px 13px; }
+      .feature-card .icon { width: 31px; height: 31px; }
+      .feature-card strong { font-size: .9rem; }
+      .feature-card small { font-size: .72rem; }
+      .feature-card .card-arrow { display: none; }
+      .ask-footer { align-items: flex-end; }
+      .tool-btn span { display: none; }
+      .tool-btn { width: 42px; padding: 0; justify-content: center; }
+      .quick-row { grid-template-columns: 1fr; }
+      .modal-layer { padding: 8px; }
+      .auth-modal { width: calc(100% - 24px); max-width: calc(100% - 24px); padding: 25px 19px 20px; border-radius: 21px; overflow: hidden; }
+      .auth-modal h2 { font-size: 1.18rem; }
+      .auth-row { gap: 10px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10M9 20v-6h6v6"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H7l-4 2 1.4-4.1A9 9 0 1 1 21 12Z"/><path d="M8 12h.01M12 12h.01M16 12h.01"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6.5h6l2 2h10v10.5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 2 9 5-9 5-9-5Z"/><path d="m3 12 9 5 9-5M3 17l9 5 9-5"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 2h9l4 4v16H6Z"/><path d="M14 2v5h5M9 12h6M9 16h6"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2 21h20Z"/><path d="M12 9v5M12 18h.01"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20V7M2 20h22"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H3v-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.6v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></symbol>
+    <symbol id="i-headset" viewBox="0 0 24 24"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><path d="M4 14H2v5h4v-5ZM20 14h2v5h-4v-5ZM18 19c0 2-2 3-5 3"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 13a8 8 0 1 1-10-10 7 7 0 0 0 10 10Z"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
+    <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M8.3 15.6A7 7 0 1 1 16 15.5c-.7.6-1 1.3-1 2.5H9c0-1.1-.1-1.8-.7-2.4Z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="m8 12 3 3 6-7"/></symbol>
+    <symbol id="i-cap" viewBox="0 0 24 24"><path d="m2 9 10-5 10 5-10 5Z"/><path d="M6 11v5c3 3 9 3 12 0v-5M22 9v6"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 15-5-5L5 20"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="m3 3 18 18M10.5 5.2A10.8 10.8 0 0 1 12 5c6 0 10 7 10 7a16 16 0 0 1-2.1 3M6.2 6.2C3.6 8 2 12 2 12s4 7 10 7c1.5 0 2.8-.4 4-1M9.5 9.5a3.5 3.5 0 0 0 5 5"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-crown" viewBox="0 0 24 24"><path d="m3 7 4 4 5-7 5 7 4-4-2 12H5Z"/><path d="M5 22h14"/></symbol>
+  </svg>
+
+  <div class="app-shell">
+    <aside class="left-sidebar" aria-label="التنقل الرئيسي">
+      <div class="brand">
+        <svg class="brand-mark icon" viewBox="0 0 64 64"><path d="m6 22 26-13 26 13-26 13Z"/><path d="M15 28v18c10 8 24 8 34 0V28M58 22v18"/><path d="M21 40c7 5 15 5 22 0"/></svg>
+        <div><div class="brand-title">نباهة</div><div class="brand-sub">مساعدك الذكي للتحصيل</div></div>
+      </div>
+      <button class="new-chat" data-focus-ask><svg class="icon"><use href="#i-plus"/></svg> محادثة جديدة</button>
+      <nav class="nav">
+        <button class="nav-item active"><svg class="icon"><use href="#i-home"/></svg>الرئيسية</button>
+        <button class="nav-item"><svg class="icon"><use href="#i-chat"/></svg>المحادثات</button>
+        <button class="nav-item"><svg class="icon"><use href="#i-folder"/></svg>المشاريع</button>
+        <button class="nav-item"><svg class="icon"><use href="#i-layers"/></svg>التجميعات</button>
+        <button class="nav-item"><svg class="icon"><use href="#i-file"/></svg>بنك الأسئلة</button>
+        <button class="nav-item"><svg class="icon"><use href="#i-alert"/></svg>أخطائي</button>
+        <button class="nav-item"><svg class="icon"><use href="#i-chart"/></svg>تقدمي</button>
+      </nav>
+      <button class="plan-card">
+        <svg class="crown icon"><use href="#i-crown"/></svg>
+        <span><strong>الباقات</strong><small>اختر الباقة المناسبة</small></span><span class="chev">‹</span>
+      </button>
+      <div class="side-bottom">
+        <button class="nav-item"><svg class="icon"><use href="#i-settings"/></svg>الإعدادات</button>
+        <button class="nav-item"><svg class="icon"><use href="#i-headset"/></svg>المساعدة والدعم</button>
+        <button class="profile-card" id="openLogin">
+          <span class="avatar"><svg class="icon"><use href="#i-user"/></svg></span>
+          <span><strong id="profileName">حسابي</strong><small id="profileState">سجّل الدخول للبدء</small></span><span class="chev">‹</span>
+        </button>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar">
+        <div class="top-actions">
+          <button class="round-btn mobile-menu" id="menuBtn" aria-label="فتح القائمة"><svg class="icon"><use href="#i-menu"/></svg></button>
+          <button class="round-btn" aria-label="الإشعارات"><span class="badge">5</span><svg class="icon"><use href="#i-bell"/></svg></button>
+          <button class="round-btn" id="themeBtn" aria-label="الوضع الداكن"><svg class="icon"><use href="#i-moon"/></svg></button>
+          <button class="credits"><svg class="icon"><use href="#i-layers"/></svg><span>الرصيد: 45 نقطة</span><svg class="icon"><use href="#i-plus"/></svg></button>
+        </div>
+        <button class="product-switcher"><svg class="mini-mark icon"><use href="#i-bulb"/></svg><span>نباهة</span><span>⌄</span></button>
+      </header>
+
+      <div class="content">
+        <section class="hero">
+          <div class="hero-copy">
+            <svg class="grad-cap icon"><use href="#i-cap"/></svg>
+            <h1>مرحبًا بك في <span>نباهة</span></h1>
+            <p>اسأل عن أي سؤال في التحصيلي، واحصل على شرح مبسط وحلول دقيقة.</p>
+          </div>
+        </section>
+
+        <section class="feature-grid" aria-label="أدوات سريعة">
+          <button class="feature-card" data-prompt="أنشئ لي خطة مذاكرة مناسبة لاختبار التحصيلي"><svg class="icon"><use href="#i-calendar"/></svg><strong>أنشئ خطة مذاكرة</strong><small>حسب وقتك وهدفك</small><span class="card-arrow">‹</span></button>
+          <button class="feature-card" data-prompt="اختبرني في أسئلة التحصيلي"><svg class="icon"><use href="#i-file"/></svg><strong>اختبرني</strong><small>أسئلة ذكية بمستواك</small><span class="card-arrow">‹</span></button>
+          <button class="feature-card" data-prompt="اشرح لي مفهومًا بطريقة مبسطة"><svg class="icon"><use href="#i-bulb"/></svg><strong>اشرح مفهومًا</strong><small>تبسيط بخطوات وأمثلة</small><span class="card-arrow">‹</span></button>
+          <button class="feature-card" data-prompt="ساعدني في حل هذا السؤال"><svg class="icon"><use href="#i-check"/></svg><strong>حل سؤالًا</strong><small>مع الشرح التفصيلي</small><span class="card-arrow">‹</span></button>
+        </section>
+
+        <section class="ask-box" aria-label="اسأل نباهة">
+          <textarea class="ask-input" id="askInput" rows="2" placeholder="اكتب سؤالك هنا... مثل: اشرح لي قانون نيوتن الثاني"></textarea>
+          <div class="ask-footer">
+            <div class="ask-tools">
+              <button class="tool-btn" aria-label="إضافة"><svg class="icon"><use href="#i-plus"/></svg></button>
+              <button class="tool-btn"><svg class="icon"><use href="#i-image"/></svg><span>رفع صورة</span></button>
+              <button class="tool-btn"><svg class="icon"><use href="#i-layers"/></svg><span>تحصيلي</span></button>
+            </div>
+            <button class="send-btn" id="sendBtn" aria-label="إرسال السؤال"><svg class="icon"><use href="#i-send"/></svg></button>
+          </div>
+        </section>
+
+        <h2 class="quick-title">أمثلة سريعة:</h2>
+        <div class="quick-row">
+          <button class="quick" data-prompt="حل هذا السؤال خطوة بخطوة">حل هذا السؤال</button>
+          <button class="quick" data-prompt="اشرح لي قوانين الفيزياء المهمة">قوانين الفيزياء المهمة</button>
+          <button class="quick" data-prompt="كيف أحل مسائل النسب؟">كيف أحل مسائل النسب؟</button>
+        </div>
+      </div>
+    </main>
+
+    <aside class="right-sidebar" aria-label="المشاريع والمحادثات الأخيرة">
+      <section class="side-panel">
+        <div class="panel-head"><h2>المشاريع</h2><svg class="icon"><use href="#i-folder"/></svg></div>
+        <div class="project"><span class="folder orange"><svg class="icon"><use href="#i-folder"/></svg></span><span><strong>التحصيلي 2026</strong><small>12 محادثة</small></span><button class="more">•••</button></div>
+        <div class="project"><span class="folder purple"><svg class="icon"><use href="#i-folder"/></svg></span><span><strong>مراجعة الرياضيات</strong><small>5 محادثات</small></span><button class="more">•••</button></div>
+        <div class="project"><span class="folder blue"><svg class="icon"><use href="#i-folder"/></svg></span><span><strong>مراجعة الفيزياء</strong><small>8 محادثات</small></span><button class="more">•••</button></div>
+        <div class="project"><span class="folder green"><svg class="icon"><use href="#i-folder"/></svg></span><span><strong>مراجعة الكيمياء</strong><small>6 محادثات</small></span><button class="more">•••</button></div>
+      </section>
+      <section class="side-panel">
+        <div class="panel-head"><h2>آخر المحادثات</h2><svg class="icon"><use href="#i-chat"/></svg></div>
+        <div class="recent"><svg class="chat-mini icon"><use href="#i-chat"/></svg><span><strong>خطة انطلاق أكاديمية</strong><small>اليوم · 9:10 ص</small></span><button class="more">•••</button></div>
+        <div class="recent"><svg class="chat-mini icon"><use href="#i-chat"/></svg><span><strong>قوانين الفيزياء المهمة</strong><small>أمس · 7:15 م</small></span><button class="more">•••</button></div>
+        <div class="recent"><svg class="chat-mini icon"><use href="#i-chat"/></svg><span><strong>شرح قانون أوم</strong><small>أمس · 6:40 م</small></span><button class="more">•••</button></div>
+        <div class="recent"><svg class="chat-mini icon"><use href="#i-chat"/></svg><span><strong>مسائل كيمياء عضوية</strong><small>أمس · 4:20 م</small></span><button class="more">•••</button></div>
+        <button class="view-all">عرض الكل</button>
+      </section>
+    </aside>
+  </div>
+
+  <div class="modal-layer" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+    <div class="backdrop"></div>
+    <form class="auth-modal" id="loginForm" novalidate>
+      <button type="button" class="close-modal" id="closeLogin" aria-label="إغلاق">✕</button>
+      <div class="lock-badge"><svg class="icon"><use href="#i-lock"/></svg></div>
+      <h2 id="loginTitle">سجّل دخولك لاستخدام نباهة</h2>
+      <p class="lead">أدخل بياناتك للاستفادة من جميع المزايا</p>
+      <label class="field"><svg class="icon"><use href="#i-mail"/></svg><input id="email" type="email" autocomplete="email" placeholder="البريد الإلكتروني" aria-label="البريد الإلكتروني" /></label>
+      <label class="field"><svg class="icon"><use href="#i-lock"/></svg><input id="password" type="password" autocomplete="current-password" placeholder="كلمة المرور" aria-label="كلمة المرور" /><button type="button" class="eye" id="togglePass" aria-label="إظهار كلمة المرور"><svg class="icon"><use href="#i-eye-off"/></svg></button></label>
+      <div class="error" id="formError" aria-live="polite"></div>
+      <div class="auth-row"><label class="remember"><input type="checkbox" /> تذكرني</label><a class="forgot" href="#">نسيت كلمة المرور؟</a></div>
+      <button class="login-btn" type="submit">تسجيل الدخول</button>
+      <div class="divider">أو</div>
+      <button class="create-btn" type="button" id="createAccount"><svg class="icon" style="vertical-align:middle"><use href="#i-user"/></svg> إنشاء حساب جديد</button>
+    </form>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const modal = document.getElementById('loginModal');
+    const email = document.getElementById('email');
+    const password = document.getElementById('password');
+    const formError = document.getElementById('formError');
+    const askInput = document.getElementById('askInput');
+    const toast = document.getElementById('toast');
+    let toastTimer;
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+    }
+    function openLogin() {
+      modal.classList.remove('hidden');
+      setTimeout(() => email.focus(), 180);
+    }
+    function closeLogin() { modal.classList.add('hidden'); formError.textContent = ''; }
+    document.getElementById('closeLogin').addEventListener('click', closeLogin);
+    document.getElementById('openLogin').addEventListener('click', openLogin);
+    document.querySelector('.backdrop').addEventListener('click', closeLogin);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLogin(); });
+    document.getElementById('togglePass').addEventListener('click', function () {
+      const hidden = password.type === 'password';
+      password.type = hidden ? 'text' : 'password';
+      this.querySelector('use').setAttribute('href', hidden ? '#i-eye' : '#i-eye-off');
+    });
+    document.getElementById('loginForm').addEventListener('submit', e => {
+      e.preventDefault();
+      if (!email.value.trim() || !password.value.trim()) {
+        formError.textContent = 'فضلاً أدخل البريد الإلكتروني وكلمة المرور.';
+        return;
+      }
+      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.value)) {
+        formError.textContent = 'تأكد من كتابة بريد إلكتروني صحيح.';
+        email.focus();
+        return;
+      }
+      document.getElementById('profileName').textContent = email.value.split('@')[0];
+      document.getElementById('profileState').textContent = 'مرحبًا بك في نباهة';
+      closeLogin();
+      showToast('تم تسجيل الدخول بنجاح');
+    });
+    document.getElementById('createAccount').addEventListener('click', () => showToast('سيتم فتح إنشاء الحساب قريبًا'));
+    document.querySelectorAll('[data-prompt]').forEach(button => button.addEventListener('click', () => {
+      askInput.value = button.dataset.prompt;
+      askInput.focus();
+      window.scrollTo({ top: document.querySelector('.ask-box').offsetTop - 100, behavior: 'smooth' });
+    }));
+    document.querySelectorAll('[data-focus-ask]').forEach(button => button.addEventListener('click', () => {
+      document.body.classList.remove('menu-open');
+      askInput.value = '';
+      askInput.focus();
+    }));
+    document.getElementById('sendBtn').addEventListener('click', () => {
+      if (!askInput.value.trim()) { showToast('اكتب سؤالك أولاً'); askInput.focus(); return; }
+      showToast('تم إرسال سؤالك إلى نباهة');
+      askInput.value = '';
+    });
+    document.querySelectorAll('.nav-item').forEach(item => item.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      document.body.classList.remove('menu-open');
+    }));
+    document.getElementById('menuBtn').addEventListener('click', () => document.body.classList.toggle('menu-open'));
+    document.getElementById('themeBtn').addEventListener('click', () => showToast('الوضع الليلي سيكون متاحًا قريبًا'));
+  </script>
+</body>
+</html>

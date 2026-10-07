@@ -22,3 +22,9 @@ credentials*.json
 .agents/
 skills-lock.json
 /nabaha-site/
+
+# Local browser QA artifacts
+.chrome-qa*/
+.edge-qa/
+*.png
+*.tar.gz
