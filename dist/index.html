@@ -318,7 +318,7 @@
     }
     @media (max-width: 850px) {
       .app-shell { display: block; }
-      .left-sidebar { position: fixed; inset: 0 auto 0 0; width: 280px; transform: translateX(-105%); transition: .25s ease; box-shadow: 15px 0 50px rgba(17,27,61,.18); }
+      .left-sidebar { position: fixed; inset: 0 auto 0 0; width: 280px; height: 100dvh; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; transform: translateX(-105%); transition: .25s ease; box-shadow: 15px 0 50px rgba(17,27,61,.18); }
       body.menu-open .left-sidebar { transform: translateX(0); }
       .topbar { height: 75px; padding: 12px 16px; }
       .mobile-menu { display: grid; }
@@ -331,6 +331,25 @@
       .hero { min-height: 230px; padding-inline: 18px; }
     }
     @media (max-width: 560px) {
+      .left-sidebar { width: min(280px, calc(100vw - 20px)); padding: 14px 12px 12px; }
+      .left-sidebar > * { flex-shrink: 0; }
+      .brand { gap: 8px; margin-bottom: 12px; }
+      .brand-mark { width: 48px; height: 48px; }
+      .brand-title { font-size: 1.65rem; }
+      .brand-sub { margin-top: 5px; font-size: .7rem; }
+      .new-chat { min-height: 48px; border-radius: 13px; gap: 10px; font-size: .92rem; }
+      .new-chat .icon { width: 19px; height: 19px; }
+      .nav { gap: 2px; margin-top: 10px; }
+      .nav-item { min-height: 42px; gap: 11px; padding: 0 12px; border-radius: 11px; font-size: .9rem; }
+      .nav-item .icon { width: 19px; height: 19px; }
+      .nav-item.active::before { height: 22px; width: 3px; }
+      .plan-card { min-height: 64px; margin-top: 7px; padding: 9px 11px; gap: 10px; border-radius: 14px; }
+      .plan-card .crown { width: 25px; height: 25px; }
+      .plan-card small { font-size: .7rem; }
+      .side-bottom { padding-top: 8px; }
+      .profile-card { min-height: 66px; margin-top: 6px; padding: 9px; gap: 8px; }
+      .avatar { width: 40px; height: 40px; }
+      .avatar .icon { width: 23px; height: 23px; }
       .top-actions .round-btn { width: 44px; height: 44px; }
       .product-switcher { min-width: 112px; font-size: .95rem; }
       .mini-mark { width: 27px; }
