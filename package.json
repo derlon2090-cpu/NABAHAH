@@ -1,0 +1,29 @@
+{
+  "scripts": {
+    "build": "esbuild src/server.mjs --bundle --packages=external --platform=node --target=node22 --format=esm --outfile=dist/server.mjs",
+    "start": "node dist/server.mjs",
+    "storage:test": "node storage-example.mjs",
+    "migrate": "node scripts/migrate.mjs",
+    "bootstrap:admin": "node scripts/grant-first-admin.mjs",
+    "build:admin": "node scripts/build-admin.mjs",
+    "test": "node --test",
+    "check:api": "npm run build"
+  },
+  "engines": {
+    "node": ">=22.13.0 <23"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1147.0",
+    "@aws-sdk/s3-request-presigner": "^3.1147.0",
+    "@neon/config": "^1.8.4",
+    "@neon/env": "^1.5.1",
+    "@neondatabase/auth": "^0.5.0-beta",
+    "dotenv": "^18.0.6",
+    "jose": "^6.2.12",
+    "pdfjs-dist": "^6.4.299",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}

@@ -1,0 +1,11 @@
+import dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
+const apiModule = await import("../dist/api.cjs");
+const api = apiModule.default.default;
+const healthResponse = await api.fetch(new Request("https://local.test/api/health"));
+const health = await healthResponse.json();
+if (JSON.stringify(Object.keys(health).sort()) !== JSON.stringify(["auth","database","storage"])) throw new Error("Unexpected health response shape.");
+if (Object.values(health).some((value) => !["ok","error"].includes(value))) throw new Error("Unexpected health status.");
+const unauthorized = await api.fetch(new Request("https://local.test/api/admin/documents"));
+if (unauthorized.status !== 401) throw new Error("Admin route did not reject anonymous access.");
+console.log(JSON.stringify({ status: healthResponse.status, health, anonymous_admin: unauthorized.status }));
