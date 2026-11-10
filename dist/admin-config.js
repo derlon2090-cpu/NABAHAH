@@ -1,0 +1,1 @@
+window.NABAHA_CONFIG={"authUrl":"https://ep-dark-cherry-b4dztzyf.neonauth.c-6.us-east-2.aws.neon.tech/neondb/auth","apiUrl":"https://br-nameless-bird-b4g0nnhm-api.compute.c-6.us-east-2.aws.neon.tech"};

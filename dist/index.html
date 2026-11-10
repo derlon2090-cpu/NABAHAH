@@ -6,10 +6,12 @@
   <meta name="theme-color" content="#ff5a16" />
   <title>نباهة — مساعدك الذكي للتحصيل</title>
   <meta name="description" content="منصة نباهة التعليمية: اسأل، افهم، وخطّط لمذاكرتك بذكاء." />
+  <link rel="stylesheet" href="student.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23ff5a16'/%3E%3Cpath d='M20 35V24a12 12 0 0 1 24 0v11' fill='none' stroke='white' stroke-width='5' stroke-linecap='round'/%3E%3Cpath d='M16 36h32M24 45h16' fill='none' stroke='white' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <script>try{if(localStorage.getItem('nabaha-theme')==='dark'||(!localStorage.getItem('nabaha-theme')&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark-boot')}catch{}</script>
   <style>
     :root {
       --ink: #111b3d;
@@ -34,6 +36,7 @@
       color: var(--ink);
       font-family: "Tajawal", system-ui, sans-serif;
       overflow-x: hidden;
+      transition: background-color .2s ease, color .2s ease;
     }
     button, input, textarea { font: inherit; }
     button { cursor: pointer; }
@@ -311,6 +314,101 @@
     .error { min-height: 18px; margin-top: 6px; color: #d92d20; font-size: .78rem; font-weight: 600; }
     .toast { position: fixed; left: 50%; bottom: 25px; transform: translate(-50%, 30px); z-index: 150; background: var(--navy); color: white; border-radius: 13px; padding: 13px 18px; box-shadow: var(--shadow); opacity: 0; pointer-events: none; transition: .25s ease; font-weight: 700; }
     .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    html.dark-boot body,
+    body.dark {
+      --ink: #f4f6ff;
+      --muted: #aeb7cc;
+      --line: #303a52;
+      --surface: #151d31;
+      --soft: #11182a;
+      --orange-soft: #3a261f;
+      --navy: #f2f4ff;
+      background: #0b1120;
+      color: var(--ink);
+      color-scheme: dark;
+    }
+    body.dark .left-sidebar,
+    body.dark .right-sidebar,
+    body.dark .topbar,
+    body.dark .hero,
+    body.dark .ask-box,
+    body.dark .side-panel,
+    body.dark .chat-response,
+    body.dark .auth-modal { background: #151d31; border-color: var(--line); }
+    body.dark .workspace { background: #0f1628; }
+    body.dark .brand-sub,
+    body.dark .hero p,
+    body.dark .feature-card small,
+    body.dark .project small,
+    body.dark .recent small { color: var(--muted); }
+    body.dark .nav-item,
+    body.dark .round-btn,
+    body.dark .credits,
+    body.dark .product-switcher,
+    body.dark .tool-btn,
+    body.dark .quick,
+    body.dark .profile-card,
+    body.dark .feature-card,
+    body.dark .field,
+    body.dark .ask-input { color: var(--ink); background: #1b243a; border-color: var(--line); }
+    body.dark .nav-item:hover,
+    body.dark .response-head,
+    body.dark .formula-card { background: #202a42; }
+    body.dark .nav-item.active { background: #35251f; color: #ff8a4c; }
+    body.dark .plan-card { background: linear-gradient(135deg, #30241f, #3a261f); }
+    body.dark .ask-input::placeholder,
+    body.dark input::placeholder { color: #7f8aa3; }
+    body.dark .solution-copy,
+    body.dark .step-copy,
+    body.dark .quiz-choice { color: #e7eaf4; }
+    body.dark .quiz-choice { background: #1b243a; border-color: var(--line); }
+    body.dark .section-finalAnswer { background: #26213c; }
+    body.dark .modal-layer .backdrop { background: rgba(2,6,15,.76); }
+    .tool-btn.active { color: var(--orange); border-color: var(--orange); background: var(--orange-soft); }
+    .attachment-status { margin: 9px 4px 0; color: var(--muted); font-size: .78rem; font-weight: 700; }
+    .chat-response { margin-top: 18px; border: 1px solid #e1e5ef; background: rgba(255,255,255,.96); border-radius: 20px; box-shadow: var(--shadow-soft); overflow: hidden; }
+    .chat-response.hidden { display: none; }
+    .response-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 15px 18px; border-bottom: 1px solid #eef0f5; background: #fafbff; }
+    .response-head strong { color: var(--navy); }
+    .response-meta { color: #687086; font-size: .78rem; font-weight: 700; }
+    #chatResponseStatus { color: var(--purple); font-size: .78rem; font-weight: 800; }
+    .response-body { padding: 8px 18px 20px; }
+    .solution-section { padding: 14px 0; border-bottom: 1px solid #eff1f5; }
+    .solution-section:last-child { border-bottom: 0; }
+    .solution-title { margin: 0 0 10px; color: var(--navy); font-size: .95rem; }
+    .solution-copy { margin: 7px 0; line-height: 1.85; color: #30384e; }
+    .solution-copy::before { content: "•"; margin-left: 8px; color: var(--purple); }
+    .solution-step { position: relative; margin: 10px 0; padding: 12px 15px; border-radius: 13px; background: #f7f5ff; border-right: 3px solid var(--purple); }
+    .step-title { display: block; color: var(--purple); margin-bottom: 5px; }
+    .step-copy { margin: 0; line-height: 1.8; }
+    .formula-card { margin: 10px 0; padding: 12px; border-radius: 13px; background: #f8f9fc; text-align: center; direction: ltr; overflow-x: auto; }
+    .formula-description { display: block; direction: rtl; color: #687086; margin-top: 8px; }
+    .section-finalAnswer { margin-top: 8px; padding: 16px; border: 1px solid #d9d1ff; border-radius: 14px; background: #f5f2ff; }
+    .section-finalAnswer .solution-copy { color: var(--navy); font-weight: 800; }
+    .section-shortcutTip { margin-top: 10px; padding: 14px; border-radius: 14px; background: #fff8e8; border: 1px solid #f5dda7; }
+    .solution-citations { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; padding-top: 14px; color: #596176; font-size: .78rem; }
+    .citation-chip { padding: 5px 9px; border-radius: 999px; background: #eef1f8; }
+    .solution-warning { margin: 12px 0 4px; padding: 11px 13px; border-radius: 12px; background: #fff8e8; border: 1px solid #f1d58f; color: #795b11; font-size: .82rem; font-weight: 700; line-height: 1.7; }
+    .quiz-card { padding: 16px 0 4px; }
+    .quiz-prompt { margin: 0 0 16px; color: var(--navy); font-size: 1.02rem; line-height: 1.9; }
+    .quiz-choices { display: grid; gap: 9px; }
+    .quiz-choice { display: flex; align-items: center; gap: 11px; width: 100%; padding: 12px 14px; border: 1px solid #e0e4ee; border-radius: 13px; background: white; color: #293149; text-align: right; cursor: pointer; transition: .18s ease; }
+    .quiz-choice:hover:not(:disabled) { border-color: var(--purple); background: #faf8ff; transform: translateY(-1px); }
+    .quiz-choice:disabled { cursor: default; }
+    .choice-key { display: grid; place-items: center; flex: 0 0 31px; height: 31px; border-radius: 9px; background: #f0edff; color: var(--purple); }
+    .quiz-choice.correct { border-color: #62b98f; background: #eefbf5; }
+    .quiz-choice.wrong { border-color: #e68a82; background: #fff3f2; }
+    .quiz-result { margin-top: 13px; padding: 11px 13px; border-radius: 12px; font-weight: 800; }
+    .quiz-result.success { background: #eaf9f2; color: #18794e; }
+    .quiz-result.needs-work { background: #fff3f0; color: #b24438; }
+    .mastery-row { display: grid; grid-template-columns: minmax(130px,1fr) minmax(90px,1.4fr) 46px; gap: 12px; align-items: center; padding: 14px 0; border-bottom: 1px solid #eef0f5; }
+    .mastery-info { display: grid; gap: 4px; }
+    .mastery-info small { color: #777f91; }
+    .mastery-meter { height: 9px; border-radius: 999px; background: #eceef4; overflow: hidden; direction: ltr; }
+    .mastery-fill { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#ff7a1a,var(--purple)); }
+    .mastery-score { color: var(--purple); text-align: left; }
+    .empty-mastery { padding: 22px 0; color: #697185; text-align: center; }
+    .send-btn:disabled { opacity: .55; cursor: wait; }
 
     @media (max-width: 1180px) {
       .app-shell { grid-template-columns: 235px minmax(0, 1fr); }
@@ -318,7 +416,7 @@
     }
     @media (max-width: 850px) {
       .app-shell { display: block; }
-      .left-sidebar { position: fixed; inset: 0 auto 0 0; width: 280px; height: 100dvh; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; transform: translateX(-105%); transition: .25s ease; box-shadow: 15px 0 50px rgba(17,27,61,.18); }
+      .left-sidebar { position: fixed; inset: 0 auto 0 0; width: 280px; transform: translateX(-105%); transition: .25s ease; box-shadow: 15px 0 50px rgba(17,27,61,.18); }
       body.menu-open .left-sidebar { transform: translateX(0); }
       .topbar { height: 75px; padding: 12px 16px; }
       .mobile-menu { display: grid; }
@@ -331,25 +429,6 @@
       .hero { min-height: 230px; padding-inline: 18px; }
     }
     @media (max-width: 560px) {
-      .left-sidebar { width: min(280px, calc(100vw - 20px)); padding: 14px 12px 12px; }
-      .left-sidebar > * { flex-shrink: 0; }
-      .brand { gap: 8px; margin-bottom: 12px; }
-      .brand-mark { width: 48px; height: 48px; }
-      .brand-title { font-size: 1.65rem; }
-      .brand-sub { margin-top: 5px; font-size: .7rem; }
-      .new-chat { min-height: 48px; border-radius: 13px; gap: 10px; font-size: .92rem; }
-      .new-chat .icon { width: 19px; height: 19px; }
-      .nav { gap: 2px; margin-top: 10px; }
-      .nav-item { min-height: 42px; gap: 11px; padding: 0 12px; border-radius: 11px; font-size: .9rem; }
-      .nav-item .icon { width: 19px; height: 19px; }
-      .nav-item.active::before { height: 22px; width: 3px; }
-      .plan-card { min-height: 64px; margin-top: 7px; padding: 9px 11px; gap: 10px; border-radius: 14px; }
-      .plan-card .crown { width: 25px; height: 25px; }
-      .plan-card small { font-size: .7rem; }
-      .side-bottom { padding-top: 8px; }
-      .profile-card { min-height: 66px; margin-top: 6px; padding: 9px; gap: 8px; }
-      .avatar { width: 40px; height: 40px; }
-      .avatar .icon { width: 23px; height: 23px; }
       .top-actions .round-btn { width: 44px; height: 44px; }
       .product-switcher { min-width: 112px; font-size: .95rem; }
       .mini-mark { width: 27px; }
@@ -388,6 +467,7 @@
     <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
     <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></symbol>
     <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 13a8 8 0 1 1-10-10 7 7 0 0 0 10 10Z"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41"/></symbol>
     <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
     <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></symbol>
     <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M8.3 15.6A7 7 0 1 1 16 15.5c-.7.6-1 1.3-1 2.5H9c0-1.1-.1-1.8-.7-2.4Z"/></symbol>
@@ -411,21 +491,21 @@
       </div>
       <button class="new-chat" data-focus-ask><svg class="icon"><use href="#i-plus"/></svg> محادثة جديدة</button>
       <nav class="nav">
-        <button class="nav-item active"><svg class="icon"><use href="#i-home"/></svg>الرئيسية</button>
-        <button class="nav-item"><svg class="icon"><use href="#i-chat"/></svg>المحادثات</button>
-        <button class="nav-item"><svg class="icon"><use href="#i-folder"/></svg>المشاريع</button>
-        <button class="nav-item"><svg class="icon"><use href="#i-layers"/></svg>التجميعات</button>
-        <button class="nav-item"><svg class="icon"><use href="#i-file"/></svg>بنك الأسئلة</button>
-        <button class="nav-item"><svg class="icon"><use href="#i-alert"/></svg>أخطائي</button>
-        <button class="nav-item"><svg class="icon"><use href="#i-chart"/></svg>تقدمي</button>
+        <button class="nav-item active" data-view="الرئيسية"><svg class="icon"><use href="#i-home"/></svg>الرئيسية</button>
+        <button class="nav-item" data-view="المحادثات"><svg class="icon"><use href="#i-chat"/></svg>المحادثات</button>
+        <button class="nav-item" data-view="المشاريع"><svg class="icon"><use href="#i-folder"/></svg>المشاريع</button>
+        <button class="nav-item" data-view="التجميعات"><svg class="icon"><use href="#i-layers"/></svg>التجميعات</button>
+        <button class="nav-item" data-view="بنك الأسئلة"><svg class="icon"><use href="#i-file"/></svg>بنك الأسئلة</button>
+        <button class="nav-item" data-view="أخطائي"><svg class="icon"><use href="#i-alert"/></svg>أخطائي</button>
+        <button class="nav-item" data-view="تقدمي"><svg class="icon"><use href="#i-chart"/></svg>تقدمي</button>
       </nav>
-      <button class="plan-card">
+      <button class="plan-card" id="plansBtn">
         <svg class="crown icon"><use href="#i-crown"/></svg>
         <span><strong>الباقات</strong><small>اختر الباقة المناسبة</small></span><span class="chev">‹</span>
       </button>
       <div class="side-bottom">
-        <button class="nav-item"><svg class="icon"><use href="#i-settings"/></svg>الإعدادات</button>
-        <button class="nav-item"><svg class="icon"><use href="#i-headset"/></svg>المساعدة والدعم</button>
+        <button class="nav-item" data-view="الإعدادات"><svg class="icon"><use href="#i-settings"/></svg>الإعدادات</button>
+        <button class="nav-item" data-view="المساعدة والدعم"><svg class="icon"><use href="#i-headset"/></svg>المساعدة والدعم</button>
         <button class="profile-card" id="openLogin">
           <span class="avatar"><svg class="icon"><use href="#i-user"/></svg></span>
           <span><strong id="profileName">حسابي</strong><small id="profileState">سجّل الدخول للبدء</small></span><span class="chev">‹</span>
@@ -437,11 +517,11 @@
       <header class="topbar">
         <div class="top-actions">
           <button class="round-btn mobile-menu" id="menuBtn" aria-label="فتح القائمة"><svg class="icon"><use href="#i-menu"/></svg></button>
-          <button class="round-btn" aria-label="الإشعارات"><span class="badge">5</span><svg class="icon"><use href="#i-bell"/></svg></button>
+          <button class="round-btn" id="notificationsBtn" aria-label="الإشعارات"><span class="badge">5</span><svg class="icon"><use href="#i-bell"/></svg></button>
           <button class="round-btn" id="themeBtn" aria-label="الوضع الداكن"><svg class="icon"><use href="#i-moon"/></svg></button>
-          <button class="credits"><svg class="icon"><use href="#i-layers"/></svg><span>الرصيد: 45 نقطة</span><svg class="icon"><use href="#i-plus"/></svg></button>
+          <button class="credits" id="creditsBtn"><svg class="icon"><use href="#i-layers"/></svg><span>الرصيد: 45 نقطة</span><svg class="icon"><use href="#i-plus"/></svg></button>
         </div>
-        <button class="product-switcher"><svg class="mini-mark icon"><use href="#i-bulb"/></svg><span>نباهة</span><span>⌄</span></button>
+        <button class="product-switcher" id="aboutBtn"><svg class="mini-mark icon"><use href="#i-bulb"/></svg><span>تعرّف على نباهة</span><span>⌄</span></button>
       </header>
 
       <div class="content">
@@ -464,12 +544,22 @@
           <textarea class="ask-input" id="askInput" rows="2" placeholder="اكتب سؤالك هنا... مثل: اشرح لي قانون نيوتن الثاني"></textarea>
           <div class="ask-footer">
             <div class="ask-tools">
-              <button class="tool-btn" aria-label="إضافة"><svg class="icon"><use href="#i-plus"/></svg></button>
-              <button class="tool-btn"><svg class="icon"><use href="#i-image"/></svg><span>رفع صورة</span></button>
-              <button class="tool-btn"><svg class="icon"><use href="#i-layers"/></svg><span>تحصيلي</span></button>
+              <button class="tool-btn" id="addAttachmentBtn" aria-label="إضافة مرفق"><svg class="icon"><use href="#i-plus"/></svg></button>
+              <button class="tool-btn" id="imageUploadBtn"><svg class="icon"><use href="#i-image"/></svg><span>رفع صورة</span></button>
+              <button class="tool-btn active" id="examModeBtn" aria-pressed="true"><svg class="icon"><use href="#i-layers"/></svg><span>تحصيلي</span></button>
+              <input id="imageUpload" type="file" accept="image/png,image/jpeg,image/webp" hidden />
             </div>
             <button class="send-btn" id="sendBtn" aria-label="إرسال السؤال"><svg class="icon"><use href="#i-send"/></svg></button>
           </div>
+        </section>
+        <div class="attachment-status hidden" id="attachmentStatus" aria-live="polite"></div>
+
+        <section class="chat-response hidden" id="chatResponse" aria-live="polite" aria-label="إجابة نباهة">
+          <header class="response-head">
+            <div><strong>حل نباهة</strong><div class="response-meta"></div></div>
+            <span id="chatResponseStatus">جاري التحضير…</span>
+          </header>
+          <div class="response-body" id="chatResponseBody"></div>
         </section>
 
         <h2 class="quick-title">أمثلة سريعة:</h2>
@@ -500,7 +590,7 @@
     </aside>
   </div>
 
-  <div class="modal-layer" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+  <div class="modal-layer hidden" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
     <div class="backdrop"></div>
     <form class="auth-modal" id="loginForm" novalidate>
       <button type="button" class="close-modal" id="closeLogin" aria-label="إغلاق">✕</button>
@@ -510,7 +600,7 @@
       <label class="field"><svg class="icon"><use href="#i-mail"/></svg><input id="email" type="email" autocomplete="email" placeholder="البريد الإلكتروني" aria-label="البريد الإلكتروني" /></label>
       <label class="field"><svg class="icon"><use href="#i-lock"/></svg><input id="password" type="password" autocomplete="current-password" placeholder="كلمة المرور" aria-label="كلمة المرور" /><button type="button" class="eye" id="togglePass" aria-label="إظهار كلمة المرور"><svg class="icon"><use href="#i-eye-off"/></svg></button></label>
       <div class="error" id="formError" aria-live="polite"></div>
-      <div class="auth-row"><label class="remember"><input type="checkbox" /> تذكرني</label><a class="forgot" href="#">نسيت كلمة المرور؟</a></div>
+      <div class="auth-row"><label class="remember"><input id="rememberMe" type="checkbox" /> تذكرني</label><a class="forgot" id="forgotPassword" href="#">نسيت كلمة المرور؟</a></div>
       <button class="login-btn" type="submit">تسجيل الدخول</button>
       <div class="divider">أو</div>
       <button class="create-btn" type="button" id="createAccount"><svg class="icon" style="vertical-align:middle"><use href="#i-user"/></svg> إنشاء حساب جديد</button>
@@ -518,9 +608,9 @@
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+  <script src="admin-config.js?v=20261110"></script>
   <script>
     const modal = document.getElementById('loginModal');
-    const email = document.getElementById('email');
     const password = document.getElementById('password');
     const formError = document.getElementById('formError');
     const askInput = document.getElementById('askInput');
@@ -535,9 +625,14 @@
     }
     function openLogin() {
       modal.classList.remove('hidden');
-      setTimeout(() => email.focus(), 180);
+      document.getElementById('openLogin').setAttribute('aria-expanded', 'true');
+      setTimeout(() => document.getElementById('email').focus(), 180);
     }
-    function closeLogin() { modal.classList.add('hidden'); formError.textContent = ''; }
+    function closeLogin() {
+      modal.classList.add('hidden');
+      document.getElementById('openLogin').setAttribute('aria-expanded', 'false');
+      formError.textContent = '';
+    }
     document.getElementById('closeLogin').addEventListener('click', closeLogin);
     document.getElementById('openLogin').addEventListener('click', openLogin);
     document.querySelector('.backdrop').addEventListener('click', closeLogin);
@@ -547,23 +642,6 @@
       password.type = hidden ? 'text' : 'password';
       this.querySelector('use').setAttribute('href', hidden ? '#i-eye' : '#i-eye-off');
     });
-    document.getElementById('loginForm').addEventListener('submit', e => {
-      e.preventDefault();
-      if (!email.value.trim() || !password.value.trim()) {
-        formError.textContent = 'فضلاً أدخل البريد الإلكتروني وكلمة المرور.';
-        return;
-      }
-      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.value)) {
-        formError.textContent = 'تأكد من كتابة بريد إلكتروني صحيح.';
-        email.focus();
-        return;
-      }
-      document.getElementById('profileName').textContent = email.value.split('@')[0];
-      document.getElementById('profileState').textContent = 'مرحبًا بك في نباهة';
-      closeLogin();
-      showToast('تم تسجيل الدخول بنجاح');
-    });
-    document.getElementById('createAccount').addEventListener('click', () => showToast('سيتم فتح إنشاء الحساب قريبًا'));
     document.querySelectorAll('[data-prompt]').forEach(button => button.addEventListener('click', () => {
       askInput.value = button.dataset.prompt;
       askInput.focus();
@@ -574,18 +652,28 @@
       askInput.value = '';
       askInput.focus();
     }));
-    document.getElementById('sendBtn').addEventListener('click', () => {
-      if (!askInput.value.trim()) { showToast('اكتب سؤالك أولاً'); askInput.focus(); return; }
-      showToast('تم إرسال سؤالك إلى نباهة');
-      askInput.value = '';
-    });
     document.querySelectorAll('.nav-item').forEach(item => item.addEventListener('click', () => {
       document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
       item.classList.add('active');
       document.body.classList.remove('menu-open');
     }));
     document.getElementById('menuBtn').addEventListener('click', () => document.body.classList.toggle('menu-open'));
-    document.getElementById('themeBtn').addEventListener('click', () => showToast('الوضع الليلي سيكون متاحًا قريبًا'));
+    const themeButton = document.getElementById('themeBtn');
+    function applyTheme(theme, notify = false) {
+      const dark = theme === 'dark';
+      document.documentElement.classList.remove('dark-boot');
+      document.body.classList.toggle('dark', dark);
+      themeButton.setAttribute('aria-label', dark ? 'تفعيل الوضع الشمسي' : 'تفعيل الوضع الليلي');
+      themeButton.querySelector('use').setAttribute('href', dark ? '#i-sun' : '#i-moon');
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#0b1120' : '#ff5a16');
+      try { localStorage.setItem('nabaha-theme', theme); } catch {}
+      if (notify) showToast(dark ? 'تم تفعيل الوضع الليلي' : 'تم تفعيل الوضع الشمسي');
+    }
+    const initialTheme = document.documentElement.classList.contains('dark-boot') ? 'dark' : 'light';
+    applyTheme(initialTheme);
+    themeButton.addEventListener('click', () => applyTheme(document.body.classList.contains('dark') ? 'light' : 'dark', true));
+    window.nabahaUI = { showToast, openLogin, closeLogin, applyTheme };
   </script>
+  <script type="module" src="student.js?v=20261110"></script>
 </body>
 </html>

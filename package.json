@@ -4,8 +4,14 @@
     "start": "node dist/server.mjs",
     "storage:test": "node storage-example.mjs",
     "migrate": "node scripts/migrate.mjs",
+    "verify:schema": "node scripts/verify-rag-schema.mjs",
+    "seed:golden": "node scripts/seed-golden.mjs",
+    "seed:embeddings": "node scripts/embed-chunks.mjs",
+    "verify:retrieval": "node scripts/verify-retrieval.mjs",
+    "smoke:ai": "esbuild scripts/smoke-ai.mjs --bundle --packages=external --platform=node --target=node20 --format=esm --outfile=dist/smoke-ai.mjs && node dist/smoke-ai.mjs",
     "bootstrap:admin": "node scripts/grant-first-admin.mjs",
     "build:admin": "node scripts/build-admin.mjs",
+    "build:student": "node scripts/build-student.mjs",
     "test": "node --test",
     "check:api": "npm run build"
   },
@@ -20,8 +26,10 @@
     "@neondatabase/auth": "^0.5.0-beta",
     "dotenv": "^18.0.6",
     "jose": "^6.2.12",
+    "katex": "^0.19.1",
     "pdfjs-dist": "^6.4.299",
-    "pg": "^8.23.1"
+    "pg": "^8.23.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "esbuild": "^0.28.2"

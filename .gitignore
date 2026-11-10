@@ -1,5 +1,10 @@
 node_modules/
-dist/
+dist/*
+!dist/index.html
+!dist/student.js
+!dist/student.css
+!dist/admin-config.js
+!dist/KaTeX_*
 coverage/
 *.log
 npm-debug.log*
