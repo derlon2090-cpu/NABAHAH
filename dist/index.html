@@ -600,6 +600,10 @@
       <label class="field"><svg class="icon"><use href="#i-mail"/></svg><input id="email" type="email" autocomplete="email" placeholder="البريد الإلكتروني" aria-label="البريد الإلكتروني" /></label>
       <label class="field"><svg class="icon"><use href="#i-lock"/></svg><input id="password" type="password" autocomplete="current-password" placeholder="كلمة المرور" aria-label="كلمة المرور" /><button type="button" class="eye" id="togglePass" aria-label="إظهار كلمة المرور"><svg class="icon"><use href="#i-eye-off"/></svg></button></label>
       <div class="error" id="formError" aria-live="polite"></div>
+      <div id="emailVerification" hidden>
+        <label class="field"><svg class="icon"><use href="#i-lock"/></svg><input id="verificationOtp" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="رمز التحقق المرسل للبريد" aria-label="رمز التحقق" /></label>
+        <button class="create-btn" type="button" id="verifyEmailOtp">تأكيد البريد الإلكتروني</button>
+      </div>
       <div class="auth-row"><label class="remember"><input id="rememberMe" type="checkbox" /> تذكرني</label><a class="forgot" id="forgotPassword" href="#">نسيت كلمة المرور؟</a></div>
       <button class="login-btn" type="submit">تسجيل الدخول</button>
       <div class="divider">أو</div>

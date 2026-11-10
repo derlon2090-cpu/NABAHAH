@@ -14,14 +14,33 @@ const loginForm = document.getElementById("loginForm");
 const email = document.getElementById("email");
 const password = document.getElementById("password");
 const formError = document.getElementById("formError");
+const emailVerification = document.getElementById("emailVerification");
+const verificationOtp = document.getElementById("verificationOtp");
 let conversationId = null;
 let streaming = false;
 let quizStartedAt = 0;
 let currentUser = null;
+let pendingVerificationEmail = "";
 
 function showToast(message) { window.nabahaUI?.showToast(message); }
 function openLogin() { window.nabahaUI?.openLogin(); }
 function closeLogin() { window.nabahaUI?.closeLogin(); }
+
+function requestEmailVerification(address) {
+  pendingVerificationEmail = address;
+  emailVerification.hidden = false;
+  verificationOtp.value = "";
+  verificationOtp.focus();
+}
+
+async function completeSignedInState(address) {
+  const { data } = await auth.getSession();
+  const user = data?.user ?? { email: address, name: address.split("@")[0] };
+  currentUser = user;
+  document.getElementById("profileName").textContent = user.name ?? address.split("@")[0];
+  document.getElementById("profileState").textContent = "مرحبًا بك في نباهة";
+  closeLogin();
+}
 
 function element(tag, className, text) {
   const node = document.createElement(tag);
@@ -321,9 +340,7 @@ loginForm.addEventListener("submit", async (event) => {
   try {
     const { error } = await auth.signIn.email({ email: email.value.trim(), password: password.value });
     if (error) throw error;
-    document.getElementById("profileName").textContent = email.value.split("@")[0];
-    document.getElementById("profileState").textContent = "مرحبًا بك في نباهة";
-    currentUser = { email: email.value.trim(), name: email.value.split("@")[0] };
+    await completeSignedInState(email.value.trim());
     try {
       if (document.getElementById("rememberMe").checked) localStorage.setItem("nabaha-email", email.value.trim());
       else localStorage.removeItem("nabaha-email");
@@ -331,6 +348,11 @@ loginForm.addEventListener("submit", async (event) => {
     closeLogin();
     showToast("تم تسجيل الدخول بنجاح");
   } catch (error) {
+    if (error?.code === "EMAIL_NOT_VERIFIED" || /verif/i.test(error?.message ?? "")) {
+      requestEmailVerification(email.value.trim());
+      formError.textContent = "أرسلنا رمز تحقق إلى بريدك. أدخله لإكمال تسجيل الدخول.";
+      return;
+    }
     formError.textContent = error?.message ?? "تعذر تسجيل الدخول.";
   }
 });
@@ -342,8 +364,27 @@ document.getElementById("createAccount").addEventListener("click", async () => {
   try {
     const { error } = await auth.signUp.email({ email: email.value.trim(), password: password.value, name: email.value.split("@")[0] });
     if (error) throw error;
-    formError.textContent = "تم إنشاء الحساب. تحقق من بريدك ثم سجّل الدخول.";
+    requestEmailVerification(email.value.trim());
+    formError.textContent = "تم إنشاء الحساب وإرسال رمز التحقق إلى بريدك.";
   } catch (error) { formError.textContent = error?.message ?? "تعذر إنشاء الحساب."; }
+});
+
+document.getElementById("verifyEmailOtp").addEventListener("click", async () => {
+  formError.textContent = "";
+  const otp = verificationOtp.value.trim();
+  if (!pendingVerificationEmail || !/^\d{6}$/u.test(otp)) {
+    formError.textContent = "أدخل رمز التحقق المكوّن من 6 أرقام.";
+    return;
+  }
+  try {
+    const { error } = await auth.emailOtp.verifyEmail({ email: pendingVerificationEmail, otp });
+    if (error) throw error;
+    emailVerification.hidden = true;
+    await completeSignedInState(pendingVerificationEmail);
+    showToast("تم توثيق البريد وتسجيل الدخول بنجاح");
+  } catch (error) {
+    formError.textContent = error?.message ?? "رمز التحقق غير صحيح أو انتهت صلاحيته.";
+  }
 });
 
 document.getElementById("forgotPassword").addEventListener("click", async (event) => {
