@@ -1,6 +1,12 @@
 import { createServer } from "node:http";
 import { Readable } from "node:stream";
-import api from "./api.ts";
+import dotenv from "dotenv";
+
+dotenv.config({ path: ".env.local" });
+if (process.env.USE_DATABASE_URL_UNPOOLED_FOR_RUNTIME === "true" && process.env.DATABASE_URL_UNPOOLED) {
+  process.env.DATABASE_URL = process.env.DATABASE_URL_UNPOOLED;
+}
+const { default: api } = await import("./api.ts");
 
 function requestUrl(req, port) {
   const protocol = String(req.headers["x-forwarded-proto"] || "http").split(",", 1)[0].trim();

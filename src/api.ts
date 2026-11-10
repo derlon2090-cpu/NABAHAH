@@ -6,6 +6,10 @@ import {
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { createHash, randomUUID } from "node:crypto";
 import { classifyIntent } from "./intent-router.mjs";
+import { aiConfigured, embedText, generateStructuredSolution } from "./services/ai.service.ts";
+import { hybridRetrieve } from "./services/retrieval.service.ts";
+import { sseResponse, type SSEWriter } from "./services/sse.ts";
+import { nextMastery } from "./services/mastery.service.mjs";
 
 const { Pool } = pg;
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 4, idleTimeoutMillis: 10_000 });
@@ -23,13 +27,21 @@ const bucket = process.env.R2_BUCKET_NAME;
 const subjects = ["mathematics", "physics", "chemistry", "biology"] as const;
 const behaviors = ["general_conversation", "tahsili_reasoning", "question_solving", "explanation", "follow_up", "quiz_interaction", "study_assistance", "graceful_refusal"] as const;
 const firstAdminEmail = "nabahah.official@gmail.com";
+const corsOrigin = process.env.CORS_ALLOWED_ORIGIN ?? "*";
+const allowUngroundedAnswers = process.env.ALLOW_UNGROUNDED_ANSWERS === "true";
+const localE2eUserId = process.env.NODE_ENV === "production" ? undefined : process.env.NABAHA_LOCAL_E2E_USER_ID;
+const localE2eToken = process.env.NODE_ENV === "production" ? undefined : process.env.NABAHA_LOCAL_E2E_TOKEN;
 
 function response(body: unknown, status = 200, extra: HeadersInit = {}) {
-  return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "access-control-allow-origin": "*", "access-control-allow-headers": "authorization,content-type", "access-control-allow-methods": "GET,POST,PATCH,OPTIONS", ...extra } });
+  return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "access-control-allow-origin": corsOrigin, "access-control-allow-headers": "authorization,content-type", "access-control-allow-methods": "GET,POST,PATCH,OPTIONS", ...extra } });
 }
 function safeError(status: number, error: string) { return response({ error }, status); }
 async function principal(request: Request) {
   const token = request.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
+  const hostname = new URL(request.url).hostname;
+  if (localE2eUserId && localE2eToken && token === localE2eToken && (hostname === "127.0.0.1" || hostname === "localhost")) {
+    return { id: localE2eUserId };
+  }
   if (!token || !jwks || !issuer) return null;
   try {
     const { payload } = await jwtVerify(token, jwks, { issuer });
@@ -46,6 +58,173 @@ async function admin(request: Request) {
 }
 function json(request: Request) { return request.json().catch(() => null) as Promise<Record<string, any> | null>; }
 function cleanText(value: unknown, max = 20_000) { return typeof value === "string" ? value.trim().slice(0, max) : ""; }
+
+function inferredSubject(message: string) {
+  if (/رياضيات|جبر|هندس|تفاضل|تكامل|دالة|معادلة/u.test(message)) return "mathematics";
+  if (/فيزياء|سرعة|تسارع|قوة|طاقة|كهرباء|موج/u.test(message)) return "physics";
+  if (/كيمياء|عنصر|ذرة|مول|تفاعل|اتزان/u.test(message)) return "chemistry";
+  if (/أحياء|احياء|خلية|وراثة|جهاز|كائن/u.test(message)) return "biology";
+  return null;
+}
+
+function emitSolution(writer: SSEWriter, solution: any) {
+  writer.emit("metadata", { subject: solution.subject, topic: solution.topic, difficulty: solution.difficulty, grounding: solution.grounding, warning: solution.warning });
+  for (const section of ["givens", "unknowns"] as const) {
+    writer.emit("section_start", { section });
+    solution[section].forEach((text: string, index: number) => writer.emit("text_delta", { section, index, delta: text }));
+  }
+  writer.emit("section_start", { section: "formulas" });
+  solution.formulas.forEach((formula: any) => writer.emit("formula", formula));
+  writer.emit("section_start", { section: "steps" });
+  solution.steps.forEach((step: any, index: number) => {
+    writer.emit("text_delta", { section: "steps", index, title: step.title, delta: step.explanation });
+    if (step.latex) writer.emit("formula", { latex: step.latex, description: step.title, section: "steps", index });
+  });
+  writer.emit("section_start", { section: "finalAnswer" });
+  writer.emit("text_delta", { section: "finalAnswer", delta: solution.finalAnswer });
+  if (solution.shortcutTip) {
+    writer.emit("section_start", { section: "shortcutTip" });
+    writer.emit("text_delta", { section: "shortcutTip", delta: solution.shortcutTip });
+  }
+  solution.citations.forEach((citation: any) => writer.emit("citation", citation));
+}
+
+async function prepareConversation(userId: string, body: Record<string, any>, message: string) {
+  const db = await pool.connect();
+  try {
+    await db.query("BEGIN");
+    let conversationId = typeof body.conversationId === "string" ? body.conversationId : null;
+    if (conversationId) {
+      const owned = await db.query(`SELECT id FROM ${schema}.conversations WHERE id=$1 AND owner_id=$2 FOR UPDATE`, [conversationId, userId]);
+      if (!owned.rowCount) throw new Error("conversation_not_found");
+    } else {
+      const created = await db.query(`INSERT INTO ${schema}.conversations(owner_id) VALUES($1) RETURNING id`, [userId]);
+      conversationId = created.rows[0].id;
+    }
+    const intent = classifyIntent(message, Boolean(body.conversationId));
+    await db.query(`INSERT INTO ${schema}.conversation_messages(conversation_id,role,content,behavior) VALUES($1,'user',$2,$3)`, [conversationId, message, intent.behavior]);
+    await db.query("COMMIT");
+    return { conversationId: conversationId as string, intent };
+  } catch (error) {
+    await db.query("ROLLBACK").catch(() => undefined);
+    throw error;
+  } finally {
+    db.release();
+  }
+}
+
+async function streamChat(writer: SSEWriter, userId: string, body: Record<string, any>, message: string) {
+  const started = Date.now();
+  const { conversationId, intent } = await prepareConversation(userId, body, message);
+  if (intent.behavior === "graceful_refusal") {
+    const refusal = "أنا مساعد نباهة المخصص لاختبار التحصيلي. يسعدني مساعدتك في الرياضيات أو الفيزياء أو الكيمياء أو الأحياء.";
+    writer.emit("metadata", { subject: "general", topic: "scope", difficulty: "easy" });
+    writer.emit("text_delta", { section: "finalAnswer", delta: refusal });
+    const saved = await pool.query(`INSERT INTO ${schema}.conversation_messages(conversation_id,role,content,behavior) VALUES($1,'assistant',$2,$3) RETURNING id`, [conversationId, refusal, intent.behavior]);
+    writer.emit("completed", { conversationId, messageId: String(saved.rows[0].id), status: "flagged" });
+    return;
+  }
+
+  const subjectSlug = inferredSubject(message);
+  const subject = subjectSlug ? await pool.query(`SELECT id FROM ${schema}.subjects WHERE slug=$1`, [subjectSlug]) : null;
+  const vector = await embedText(message).catch(() => null);
+  const contexts = await hybridRetrieve(pool, {
+    queryText: message,
+    queryVector: vector,
+    subjectId: subject?.rows[0]?.id ?? null,
+    limit: 5,
+  }).catch(() => []);
+
+  let assistantText: string;
+  let citations: any[] = [];
+  let model = aiConfigured() ? process.env.AI_MODEL ?? "configured-model" : "retrieval-only";
+  let usage = { prompt: 0, completion: 0 };
+  let validationStatus = "passed";
+  if (aiConfigured() && (contexts.length || allowUngroundedAnswers)) {
+    try {
+      const generated = await generateStructuredSolution(message, contexts, { allowGeneralKnowledge: allowUngroundedAnswers, subject: subjectSlug });
+      emitSolution(writer, generated.solution);
+      assistantText = JSON.stringify(generated.solution);
+      citations = generated.solution.citations;
+      model = generated.model;
+      usage = generated.usage;
+      validationStatus = generated.validationStatus;
+    } catch {
+      validationStatus = "failed";
+      assistantText = "تعذر التحقق من حل موثّق لهذا السؤال. حاول إعادة صياغته أو إضافة صورة أوضح.";
+      writer.emit("text_delta", { section: "finalAnswer", delta: assistantText });
+    }
+  } else if (contexts.length) {
+    const first = contexts[0];
+    assistantText = `وجدت مرجعًا ذا صلة من ${first.sourceName}${first.pageNumber ? `، الصفحة ${first.pageNumber}` : ""}. يلزم تفعيل نموذج الحل المنظم لإكمال الشرح.`;
+    citations = [{ sourceId: first.chunkId, sourceName: first.sourceName, page: first.pageNumber }];
+    writer.emit("metadata", { subject: subjectSlug ?? "general", topic: "retrieval", difficulty: "medium" });
+    writer.emit("text_delta", { section: "finalAnswer", delta: assistantText });
+    writer.emit("citation", citations[0]);
+  } else {
+    assistantText = "لم أجد مرجعًا معتمدًا كافيًا للإجابة دون تخمين. جرّب تحديد المادة أو رفع صورة السؤال.";
+    validationStatus = "adjusted";
+    writer.emit("metadata", { subject: subjectSlug ?? "general", topic: "no_context", difficulty: "medium" });
+    writer.emit("text_delta", { section: "finalAnswer", delta: assistantText });
+  }
+
+  const saved = await pool.query(`INSERT INTO ${schema}.conversation_messages(conversation_id,role,content,behavior) VALUES($1,'assistant',$2,$3) RETURNING id`, [conversationId, assistantText, intent.behavior]);
+  await pool.query(`INSERT INTO ${schema}.ai_generation_runs(conversation_id,message_id,model_name,latency_ms,tokens_prompt,tokens_completion,citations,validation_status) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8)`, [conversationId, saved.rows[0].id, model, Date.now() - started, usage.prompt, usage.completion, JSON.stringify(citations), validationStatus]).catch(() => undefined);
+  writer.emit("completed", { conversationId, messageId: String(saved.rows[0].id), status: validationStatus === "failed" ? "flagged" : "ok" });
+}
+
+async function recordAttempt(userId: string, body: Record<string, any>) {
+  const questionId = cleanText(body.questionId, 36);
+  const selectedOption = cleanText(body.selectedOption, 1).toUpperCase();
+  const timeSpentMs = Number(body.timeSpentMs);
+  const assistanceLevel = ["none", "hint_used", "full_solution"].includes(body.assistanceLevel) ? body.assistanceLevel : "none";
+  if (!/^[0-9a-f-]{36}$/i.test(questionId) || !/^[A-D]$/.test(selectedOption) || !Number.isInteger(timeSpentMs) || timeSpentMs < 0 || timeSpentMs > 3_600_000) return safeError(400,"invalid_attempt");
+  const db = await pool.connect();
+  try {
+    await db.query("BEGIN");
+    const student = await db.query(`INSERT INTO ${schema}.student_profiles(auth_user_id) VALUES($1) ON CONFLICT(auth_user_id) DO UPDATE SET updated_at=now() RETURNING id`, [userId]);
+    const question = await db.query(
+      `SELECT q.id,q.concept_id,q.difficulty,max(c.choice_key) FILTER(WHERE c.is_correct) correct_option
+       FROM ${schema}.questions q LEFT JOIN ${schema}.question_choices c ON c.question_id=q.id
+       WHERE q.id=$1 AND q.status='approved' GROUP BY q.id`,
+      [questionId],
+    );
+    if (!question.rowCount || !question.rows[0].concept_id || !question.rows[0].correct_option) { await db.query("ROLLBACK"); return safeError(404,"question_not_trackable"); }
+    const isCorrect = selectedOption === question.rows[0].correct_option;
+    await db.query(
+      `INSERT INTO ${schema}.student_attempts(student_id,question_id,concept_id,is_correct,time_spent_ms,assistance_level,selected_option)
+       VALUES($1,$2,$3,$4,$5,$6,$7)`,
+      [student.rows[0].id, questionId, question.rows[0].concept_id, isCorrect, timeSpentMs, assistanceLevel, selectedOption],
+    );
+    const current = await db.query(`SELECT mastery_score,attempt_count,correct_count FROM ${schema}.concept_mastery WHERE student_id=$1 AND concept_id=$2 FOR UPDATE`, [student.rows[0].id, question.rows[0].concept_id]);
+    const next = nextMastery({ currentScore: Number(current.rows[0]?.mastery_score ?? 0.5), isCorrect, difficulty: question.rows[0].difficulty, assistanceLevel, timeSpentMs, attemptCount: current.rows[0]?.attempt_count ?? 0 });
+    const mastery = await db.query(
+      `INSERT INTO ${schema}.concept_mastery(student_id,concept_id,mastery_score,confidence,attempt_count,correct_count,last_practiced_at)
+       VALUES($1,$2,$3,$4,$5,$6,now())
+       ON CONFLICT(student_id,concept_id) DO UPDATE SET mastery_score=excluded.mastery_score,confidence=excluded.confidence,attempt_count=excluded.attempt_count,correct_count=${schema}.concept_mastery.correct_count+$6,last_practiced_at=now(),updated_at=now()
+       RETURNING mastery_score,confidence,attempt_count,correct_count`,
+      [student.rows[0].id, question.rows[0].concept_id, next.masteryScore, next.confidence, next.attemptCount, isCorrect ? 1 : 0],
+    );
+    await db.query("COMMIT");
+    return response({ isCorrect, correctOption: question.rows[0].correct_option, conceptId: question.rows[0].concept_id, mastery: mastery.rows[0] }, 201);
+  } catch {
+    await db.query("ROLLBACK").catch(() => undefined);
+    return safeError(500,"attempt_unavailable");
+  } finally {
+    db.release();
+  }
+}
+
+async function masteryOverview(userId: string) {
+  const result = await pool.query(
+    `SELECT s.slug subject,t.name_ar topic,c.id concept_id,c.name_ar concept,m.mastery_score,m.confidence,m.attempt_count,m.correct_count,m.last_practiced_at
+     FROM ${schema}.student_profiles p JOIN ${schema}.concept_mastery m ON m.student_id=p.id
+     JOIN ${schema}.concepts c ON c.id=m.concept_id JOIN ${schema}.topics t ON t.id=c.topic_id JOIN ${schema}.subjects s ON s.id=t.subject_id
+     WHERE p.auth_user_id=$1 ORDER BY m.mastery_score,c.name_ar`,
+    [userId],
+  );
+  return response({ concepts: result.rows });
+}
 
 async function health() {
   const states: Record<string, "ok" | "error"> = { database: "error", auth: "error", storage: "error" };
@@ -143,7 +322,7 @@ async function adminRoute(request: Request, url: URL, actor: {id:string}) {
     if (!s3 || !bucket) return safeError(503, "storage_unavailable");
     const input = await json(request);
     if (!input || !subjects.includes(input.subject)) return safeError(400,"subject_required");
-    const claim = await pool.query(`UPDATE ${schema}.source_documents SET processing_status='extracting',updated_at=now() WHERE id=$1 AND rights_status<>'unknown' AND processing_status IN ('uploaded','failed') RETURNING id,object_key`, [extractMatch[1]]);
+    const claim = await pool.query(`UPDATE ${schema}.source_documents SET processing_status='extracting',updated_at=now() WHERE id=$1 AND rights_status<>'unknown' AND processing_status IN ('uploaded','failed') RETURNING id,object_key,original_filename`, [extractMatch[1]]);
     if (!claim.rowCount) {
       const exists=await pool.query(`SELECT rights_status,processing_status FROM ${schema}.source_documents WHERE id=$1`,[extractMatch[1]]);
       if(!exists.rowCount)return safeError(404,"not_found");
@@ -162,8 +341,17 @@ async function adminRoute(request: Request, url: URL, actor: {id:string}) {
       }
       const extracted = pages.join("\n\n").replace(/\r/g,"").replace(/[\t ]+/g," ").replace(/\n{3,}/g,"\n\n").slice(0, 2_000_000).trim();
       const chunks: string[]=[];
-      for(const paragraph of extracted.split(/\n{2,}/).map(x=>x.trim()).filter(x=>x.length>=50)){
-        for(let start=0;start<paragraph.length;start+=1800){const part=paragraph.slice(start,start+1800).trim();if(part.length>=50)chunks.push(part);if(chunks.length>=300)break;}
+      const ragChunks: Array<{pageNumber:number;content:string}>=[];
+      for(let pageIndex=0;pageIndex<pages.length;pageIndex++){
+        const normalizedPage=pages[pageIndex].replace(/\r/g,"").replace(/[\t ]+/g," ").trim();
+        for(const paragraph of normalizedPage.split(/\n{2,}/).map(x=>x.trim()).filter(x=>x.length>=50)){
+          for(let start=0;start<paragraph.length;start+=1800){
+            const part=paragraph.slice(start,start+1800).trim();
+            if(part.length>=50){chunks.push(part);ragChunks.push({pageNumber:pageIndex+1,content:part});}
+            if(chunks.length>=300)break;
+          }
+          if(chunks.length>=300)break;
+        }
         if(chunks.length>=300)break;
       }
       const client=await pool.connect();
@@ -171,13 +359,17 @@ async function adminRoute(request: Request, url: URL, actor: {id:string}) {
         await client.query("BEGIN");
         await client.query(`UPDATE ${schema}.source_documents SET extracted_text=$2,processing_status='pending_review',updated_at=now() WHERE id=$1`, [claim.rows[0].id, extracted]);
         const subjectRow=await client.query(`SELECT id FROM ${schema}.subjects WHERE slug=$1`,[input.subject]);
+        await client.query(`DELETE FROM ${schema}.document_chunks WHERE source_document_id=$1`,[claim.rows[0].id]);
+        for(const chunk of ragChunks){
+          await client.query(`INSERT INTO ${schema}.document_chunks(source_document_id,subject_id,source_name,page_number,content,metadata) VALUES($1,$2,$3,$4,$5,$6::jsonb)`,[claim.rows[0].id,subjectRow.rows[0].id,claim.rows[0].original_filename,chunk.pageNumber,chunk.content,JSON.stringify({extraction:"pdfjs",review_status:"pending"})]);
+        }
         for(let i=0;i<chunks.length;i++){
           const saved=await client.query(`INSERT INTO ${schema}.questions(subject_id,source_document_id,source_internal,prompt,question_type,difficulty,status,created_by) VALUES($1,$2,$3,$4,'multiple_choice',1,'pending',$5) RETURNING id`,[subjectRow.rows[0].id,claim.rows[0].id,`extracted_chunk:${claim.rows[0].id}:${i+1}`,chunks[i],actor.id]);
           await client.query(`INSERT INTO ${schema}.question_solutions(question_id,correct_answer,solution,explanation) VALUES($1,'','','')`,[saved.rows[0].id]);
         }
         await client.query("COMMIT");
       }catch(error){await client.query("ROLLBACK");throw error;}finally{client.release();}
-      return response({ id: claim.rows[0].id, processing_status: "pending_review", extracted_characters: extracted.length, pending_items: chunks.length });
+      return response({ id: claim.rows[0].id, processing_status: "pending_review", extracted_characters: extracted.length, pending_items: chunks.length, rag_chunks: ragChunks.length });
     } catch {
       await pool.query(`UPDATE ${schema}.source_documents SET processing_status='failed',updated_at=now() WHERE id=$1 AND processing_status='extracting'`, [claim.rows[0].id]).catch(() => undefined);
       return safeError(422, "extraction_failed");
@@ -239,7 +431,7 @@ async function replaceChoices(db: pg.PoolClient, questionId: string, choices: un
 }
 
 export default { async fetch(request: Request): Promise<Response> {
-  if (request.method === "OPTIONS") return new Response(null,{status:204,headers:{"access-control-allow-origin":"*","access-control-allow-headers":"authorization,content-type","access-control-allow-methods":"GET,POST,PATCH,OPTIONS"}});
+  if (request.method === "OPTIONS") return new Response(null,{status:204,headers:{"access-control-allow-origin":corsOrigin,"access-control-allow-headers":"authorization,content-type","access-control-allow-methods":"GET,POST,PATCH,OPTIONS"}});
   const url = new URL(request.url);
   try {
     if (url.pathname === "/api/health" && request.method === "GET") return await health();
@@ -275,6 +467,26 @@ export default { async fetch(request: Request): Promise<Response> {
         return response({ conversationId, intent: intent.behavior, tool: intent.requiresBank ? "question_bank" : "none", question, next: intent.requiresBank ? (question ? "quiz_interaction" : "no_approved_question") : "conversational_model_not_configured", history: [...history.slice(-19),{role:"user",content:message}] });
       } catch { await db.query("ROLLBACK"); return safeError(500,"chat_unavailable"); } finally { db.release(); }
     }
+    if (url.pathname === "/api/chat/stream" && request.method === "POST") {
+      const user = await principal(request);
+      if (!user) return safeError(401,"unauthorized");
+      const body = await json(request);
+      const message = cleanText(body?.message, 10_000);
+      if (!body || !message) return safeError(400,"invalid_message");
+      return sseResponse((writer) => streamChat(writer, user.id, body, message), request.signal, corsOrigin);
+    }
+    if (url.pathname === "/api/attempts" && request.method === "POST") {
+      const user = await principal(request);
+      if (!user) return safeError(401,"unauthorized");
+      const body = await json(request);
+      if (!body) return safeError(400,"invalid_attempt");
+      return await recordAttempt(user.id, body);
+    }
+    if (url.pathname === "/api/mastery" && request.method === "GET") {
+      const user = await principal(request);
+      if (!user) return safeError(401,"unauthorized");
+      return await masteryOverview(user.id);
+    }
     if (url.pathname === "/api/admin/bootstrap" && request.method === "POST") {
       const user = await principal(request);
       if (!user) return safeError(401,"unauthorized");
@@ -301,7 +513,12 @@ export default { async fetch(request: Request): Promise<Response> {
       if (!await principal(request)) return safeError(401,"unauthorized");
       const query=cleanText(url.searchParams.get("q"),1000);
       if(!query)return safeError(400,"query_required");
-      return response({results:await retrieveApproved(query,5)});
+      const subjectSlug = url.searchParams.get("subject");
+      const subject = subjectSlug ? await pool.query(`SELECT id FROM ${schema}.subjects WHERE slug=$1`, [subjectSlug]) : null;
+      const vector = await embedText(query).catch(() => null);
+      const chunks = await hybridRetrieve(pool, { queryText: query, queryVector: vector, subjectId: subject?.rows[0]?.id ?? null, limit: 5 }).catch(() => []);
+      if (chunks.length) return response({ results: chunks, mode: vector ? "hybrid" : "full_text" });
+      return response({results:await retrieveApproved(query,5), mode:"legacy_question_bank"});
     }
     if (url.pathname.startsWith("/api/admin/")) {
       const access = await admin(request);
@@ -310,5 +527,8 @@ export default { async fetch(request: Request): Promise<Response> {
       return await adminRoute(request,url,access.user);
     }
     return safeError(404,"not_found");
-  } catch { return safeError(500,"internal_error"); }
+  } catch (error) {
+    if (localE2eUserId) console.error("local_e2e_request_failed", error);
+    return safeError(500,"internal_error");
+  }
 } };
