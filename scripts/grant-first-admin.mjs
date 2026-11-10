@@ -9,7 +9,7 @@ const client = new Client({ connectionString: process.env.DATABASE_URL });
 try {
   await client.connect();
   await client.query("BEGIN");
-  const account = await client.query('SELECT id FROM public."user" WHERE lower(email)=lower($1) AND email_verified=true FOR SHARE', [authorizedEmail]);
+  const account = await client.query('SELECT id FROM neon_auth."user" WHERE lower(email)=lower($1) AND "emailVerified"=true FOR SHARE', [authorizedEmail]);
   if (account.rowCount !== 1) {
     await client.query("ROLLBACK");
     console.log("Admin bootstrap pending: the authorized Neon Auth account must sign up first.");

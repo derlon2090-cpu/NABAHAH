@@ -18,16 +18,26 @@ const authBase = process.env.NEON_AUTH_BASE_URL;
 const jwksUrl = process.env.NEON_AUTH_JWKS_URL;
 const jwks = jwksUrl ? createRemoteJWKSet(new URL(jwksUrl)) : null;
 const issuer = authBase ? new URL(authBase).origin : undefined;
-const r2Ready = Boolean(process.env.R2_ENDPOINT && process.env.R2_BUCKET_NAME && process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY);
-const s3 = r2Ready ? new S3Client({
-  region: "auto", endpoint: process.env.R2_ENDPOINT, forcePathStyle: true,
-  credentials: { accessKeyId: process.env.R2_ACCESS_KEY_ID!, secretAccessKey: process.env.R2_SECRET_ACCESS_KEY! },
-}) : null;
-const bucket = process.env.R2_BUCKET_NAME;
+const neonStorageReady = Boolean(
+  process.env.AWS_ACCESS_KEY_ID
+  && process.env.AWS_SECRET_ACCESS_KEY
+  && process.env.AWS_ENDPOINT_URL_S3
+  && process.env.AWS_REGION,
+);
+const legacyR2Ready = Boolean(process.env.R2_ENDPOINT && process.env.R2_BUCKET_NAME && process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY);
+const s3 = neonStorageReady
+  ? new S3Client({ forcePathStyle: true })
+  : legacyR2Ready
+    ? new S3Client({
+      region: "auto", endpoint: process.env.R2_ENDPOINT, forcePathStyle: true,
+      credentials: { accessKeyId: process.env.R2_ACCESS_KEY_ID!, secretAccessKey: process.env.R2_SECRET_ACCESS_KEY! },
+    })
+    : null;
+const bucket = neonStorageReady ? "assets" : process.env.R2_BUCKET_NAME;
 const subjects = ["mathematics", "physics", "chemistry", "biology"] as const;
 const behaviors = ["general_conversation", "tahsili_reasoning", "question_solving", "explanation", "follow_up", "quiz_interaction", "study_assistance", "graceful_refusal"] as const;
 const firstAdminEmail = "nabahah.official@gmail.com";
-const corsOrigin = process.env.CORS_ALLOWED_ORIGIN ?? "*";
+const corsOrigin = process.env.CORS_ALLOWED_ORIGIN ?? "https://nabahah.vercel.app";
 const allowUngroundedAnswers = process.env.ALLOW_UNGROUNDED_ANSWERS === "true";
 const localE2eUserId = process.env.NODE_ENV === "production" ? undefined : process.env.NABAHA_LOCAL_E2E_USER_ID;
 const localE2eToken = process.env.NODE_ENV === "production" ? undefined : process.env.NABAHA_LOCAL_E2E_TOKEN;
@@ -494,9 +504,9 @@ export default { async fetch(request: Request): Promise<Response> {
       try {
         await db.query("BEGIN");
         await db.query("SELECT pg_advisory_xact_lock(hashtext('nabaha_first_admin_bootstrap'))");
-        const account=await db.query('SELECT email_verified FROM public."user" WHERE id=$1 AND lower(email)=lower($2) FOR UPDATE',[user.id,firstAdminEmail]);
+        const account=await db.query('SELECT "emailVerified" FROM neon_auth."user" WHERE id::text=$1 AND lower(email)=lower($2) FOR UPDATE',[user.id,firstAdminEmail]);
         const existing=await db.query(`SELECT count(*)::int AS count FROM ${schema}.nabaha_admin_users`);
-        if(account.rowCount!==1 || account.rows[0].email_verified!==true || existing.rows[0].count!==0) {
+        if(account.rowCount!==1 || account.rows[0].emailVerified!==true || existing.rows[0].count!==0) {
           await db.query("ROLLBACK");
           return safeError(403,"bootstrap_not_available");
         }
